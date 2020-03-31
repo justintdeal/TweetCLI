@@ -1,12 +1,18 @@
 from socket import * 
 import sys
 import _thread as thread
+import pickle
 
 activeUsers = []
 userToPort = dict()
-hashToUser = dict()
-userToHash = dict()
+userSubs = dict()
+userTweets = dict()
 
+######################################
+#          Driver Method             #
+# Determines if a user can login     #
+# creates threads for new clients    #
+######################################
 def main(): 
     host = '127.0.0.1'
     port = validPort(sys.argv)
@@ -16,49 +22,90 @@ def main():
         conn, addr = sock.accept()
         user = conn.recv(1024).decode()
         if user in activeUsers: 
-            print('here')
+            ### Deny connection
             conn.sendall("False".encode())
         else:
+            ### Allows connection, add user to active users, create client thread
             conn.sendall("True".encode())
             activeUsers.append(user)
-            if (user not in userToHash.keys()):
-                userToHash[user] = []
-            userToPort[user] = conn
-            thread.start_new_thread(newClient, (conn,))
+            thread.start_new_thread(newClient, (conn,user))
         
+#####################################
+#        New Client Thread          #
+# recieves data from client and     #
+# delegates to preformAction func   #
+#####################################
+def newClient(conn, user):
+    ### Initialize new client info and store connection 
+    userSubs[user] = []
+    userTweets[user] = []
+    userToPort[user] = conn
+    print('newClient')
 
-def newClient(conn):
-
+    ### Listens for services requests 
     while True:
-        print('newClient')
         data = conn.recv(1024).decode().split()
-        if (data[0] == "sub"): #putting hashtags away
-            user = data[1] #saving data
-            tag = data[2]
-            print(tag) #get rid of later
-            if (tag not in hashToUser.keys()): # add hashtag to keys if not already saved 
-                hashToUser[tag] = []
-            
-            if (len(userToHash[user]) >= 3): #lenght check for subscriptions
-                print("sub <hashtag> failed, already exists or exceeds 3 limitation")
-                # sys.exit()
-            if (user not in hashToUser[tag]): #add user to tag key
-                hashToUser[tag].append(user)
-            if (tag not in userToHash[user]): #add tag to user key
-                userToHash[user].append(tag)
-            conn.sendall(("good").encode())
+        print(data)
+        preformAction(data)
 
+#####################################
+#   Handles Requests from Clients   #
+#####################################
+def preformAction(data):
+    request = data[0]
+    ### Handles subscibe functionality
+    if (request == "sub"): 
+        user = data[1]
+        tag = data[2]
+        subscribeToTag(user, tag) 
+    ### Handles tweet functionality
+    if (data[0] == "tweet"):
+        user = data[3]
+        message = data[1]
+        tag = data[2]
+        userTweets[user].append(message) # add tweet to user tweet history 
+        for use in activeUsers:          # loop through all active users and broadcast tweets
+            if "#ALL" in userSubs[use] or tag in userSubs[use]: #check if tag or ALL is in their set of subscriptions
+                userToPort[use].sendall(("rep " + str(user)+" "+ str(message)+ " " + str(tag)).encode())
+    ### Handles unsubscribing from a hashtag
+    if (data[0] == "unsub"):
+        user = data[1]
+        tag = data[2]
+        unsubFromTag(user, tag)
+    ### Handles the get user features
+    if data[0] == 'users':
+        user = data[1]
+        users = ["user"] + activeUsers
+        print("WE MADE IT")
+        onlineUsers = pickle.dumps(users)
+        userToPort[user].send((onlineUsers))
+    ### Handles getTweets, sends client all of it's previous tweets
+    if data[0] == "getTweets":
+        user = data[1]
+        requestedUser = data[2]
+        t = ["tweets"] + userTweets[requestedUser]
+        tweets = pickle.dumps(t)
+        userToPort[user].send(tweets)
     
-        if (data[0] == "tweet"): #if tweet is called
-            message = data[1] #saving data
-            tag = data[2]
-            for use in activeUsers: #loop through all active users
-                if "#ALL" in userToHash[use] or tag in userToHash[use]: #check if tag or ALL is in their set of subscriptions
-                    userToPort[use].sendall(("rep " + str(use)+" "+ str(message)+ " " + str(tag)).encode()) #send to client to display
+#########################################
+# Helpers for Subscirbe and Unsubscribe #
+#########################################
+def unsubFromTag(user, tag):
+    ### if unsub from all
+    if (tag == "#ALL"):     
+        userSubs[user] = []
+    ### removes sub
+    userSubs[user].remove(tag)
 
-            
-        # conn.sendall(data.enconde())
+### helper to handle subscriptions to a given hashtag
+def subscribeToTag(user, tag):
+    if (tag not in userSubs[user]): #add tag to user key
+        userSubs[user].append(tag)
+        userToPort[user].sendall(("good").encode())
 
+#######################################
+# helper to validate port selection   #
+#######################################
 def validPort(args): 
     try: 
         port = int(args[1])
@@ -67,7 +114,9 @@ def validPort(args):
     except: 
         sys.exit()
 
-#helper to get a socket to interact with 
+###########################################
+# helper to get a socket to interact with #
+###########################################
 def getAndBindSocket(host, port):
     sock = socket(AF_INET, SOCK_STREAM)
     try: 
@@ -82,5 +131,3 @@ main()
 
 
 
-
-main()
