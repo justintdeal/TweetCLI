@@ -8,6 +8,8 @@ import _thread as thread
 
 user_timeline = []
 subs = []
+activeUsers = []
+endSession = False
 ######################################
 #          Driver Method             #
 # connects to server, starts client  #
@@ -17,10 +19,12 @@ def main():
     host, port, user = validateArgs(sys.argv)
     csock = connect(host, port, user)
     thread.start_new_thread(listening, (csock,))
-    while True:
+    activeUsers.append(user)
+    while not endSession:
         option = input("\nOptions: tweet, subscribe, unsubscribe, timeline, getusers, gettweets, exit: ").split()
         performAction(option, user, csock)
         time.sleep(.25)
+    sys.exit()
 ###########################################
 # Client Thread handling server responses #
 ###########################################
@@ -28,7 +32,7 @@ def listening(conn):
     while True:
         try:
             data = conn.recv(1024).decode().split()
-            print("here1")
+            # print("here1")
         except:
             d = conn.recv(2048)
             data = pickle.loads(d)
@@ -36,14 +40,36 @@ def listening(conn):
             print(data)
         if data[0] == "rep":
             user_timeline.append(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
+            print(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
         if data [0] == "good":
             print("operation success")
         if data[0] == "user":
             for user in data[1:]:
                 print(user)
         if data[0] == "tweets":
-            for tweet in tweets[1:]:
-                print(tweet)
+            ###part of Justin's gettweets
+            # for tweet in tweets[1:]:
+            #     print(tweet)
+            thisTweet = ""
+            for tweet in data[1:]:
+                thisTweet += tweet + " " 
+            print(thisTweet)
+
+        if data[0] == "ended":
+            print("bye bye")
+            endSession = True
+            conn.close()
+            sys.exit()
+        ###part of Justin's getusers
+        # if data[0] == "user":
+        #     for user in data[1:]:
+        #         print(user)
+        if data[0] == "incoming":
+            for person in data[1:]:
+                print(person)
+        if data[0] == "notIn":
+            print("no user <Username> in the system")
+            
 #########################
 # Handles User Requests #
 #########################
@@ -69,6 +95,8 @@ def performAction(option, user, csock):
         getUsers(user, csock)
     if len(option) == 2 and option[0] == "gettweets":
         getTweets(user, option[1], csock)
+    if len(option) == 1 and option[0] == "exit":
+        exit(user, csock)
 
 ###############################################
 # Helpers for sending user requests to server #
@@ -78,11 +106,11 @@ def tweet(message, tag, user, conn):
     conn.sendall(code.encode())
 
 def subscribe(user, tag, conn): 
-    if len(subs) > 3:
-        print("sub <hashtag> failed, already exists or exceeds 3 limitation")
+    if len(subs) > 3: #parameter checking
+        print("sub <hashtag> failed, already exists or exceeds 3 limitation") #error code
     else:
         subs.append(tag)
-        code = "sub " + str(user) + " " + str(tag)
+        code = "sub " + str(user) + " " + str(tag) #send to server
         conn.sendall(code.encode())
 
 def unsubscribe(user, tag, conn):
@@ -103,6 +131,9 @@ def getTweets(user, username, conn):
 def timeline():
     for tweet in user_timeline:
        print(tweet)
+def exit(user, conn):
+    code = "exit " + str(user)
+    conn.sendall(code.encode())
 
 ###################################
 # Helper for Connecting to server #
