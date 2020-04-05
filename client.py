@@ -9,6 +9,8 @@ import _thread as thread
 user_timeline = []
 subs = []
 activeUsers = []
+endSessionLock = thread.allocate_lock()
+global endSession
 endSession = False
 ######################################
 #          Driver Method             #
@@ -16,19 +18,26 @@ endSession = False
 # thread, and gets user input        #
 ######################################
 def main():
+    global endSession
     host, port, user = validateArgs(sys.argv)
     csock = connect(host, port, user)
     thread.start_new_thread(listening, (csock,))
     activeUsers.append(user)
-    while not endSession:
+    while True:
+        endSessionLock.acquire()
+        if endSession:
+            endSessionLock.release()
+            sys.exit()
+        endSessionLock.release()
         option = input("\nOptions: tweet, subscribe, unsubscribe, timeline, getusers, gettweets, exit: ").split()
         performAction(option, user, csock)
         time.sleep(.25)
-    sys.exit()
+        
 ###########################################
 # Client Thread handling server responses #
 ###########################################
 def listening(conn):
+    global endSession
     while True:
         try:
             data = conn.recv(1024).decode().split()
@@ -41,8 +50,10 @@ def listening(conn):
         if data[0] == "rep":
             user_timeline.append(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
             print(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
-        if data [0] == "good":
+        if data[0] == "good":
             print("operation success")
+        if data[0] == "tooMany":
+            print("sub <hashtag> failed, already exists or exceeds 3 limitation")
         if data[0] == "user":
             for user in data[1:]:
                 print(user)
@@ -57,9 +68,11 @@ def listening(conn):
 
         if data[0] == "ended":
             print("bye bye")
+            endSessionLock.acquire()
             endSession = True
+            endSessionLock.release()
             conn.close()
-            sys.exit()
+            thread.exit()
         ###part of Justin's getusers
         # if data[0] == "user":
         #     for user in data[1:]:
@@ -131,6 +144,7 @@ def getTweets(user, username, conn):
 def timeline():
     for tweet in user_timeline:
        print(tweet)
+
 def exit(user, conn):
     code = "exit " + str(user)
     conn.sendall(code.encode())

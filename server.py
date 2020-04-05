@@ -110,7 +110,7 @@ def preformAction(data, conn, user):
         userToPort[user].sendall(("ended ".encode()))
         del userToPort[user]
         conn.close()
-        sys.exit()
+        thread.exit()
     
 #########################################
 # Helpers for Subscirbe and Unsubscribe #
@@ -129,6 +129,9 @@ def subscribeToTag(user, tag):
         if len(userSubs[user]) < 3:
             userSubs[user].append(tag)
             userToPort[user].sendall(("good").encode())
+        else:
+            userToPort[user].sendall(("tooMany").encode())
+
 
 #######################################
 # helper to validate port selection   #
