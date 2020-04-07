@@ -12,6 +12,7 @@ activeUsers = []
 endSessionLock = thread.allocate_lock()
 global endSession
 endSession = False
+letterNums = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z","#","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z","1","2","3","4","5","6","7","8","9","0"]
 ######################################
 #          Driver Method             #
 # connects to server, starts client  #
@@ -29,7 +30,11 @@ def main():
             endSessionLock.release()
             sys.exit()
         endSessionLock.release()
-        option = input("\nOptions: tweet, subscribe, unsubscribe, timeline, getusers, gettweets, exit: ").split()
+        option = input("\n").split()
+        if (len(option) >= 3 and option[1] == '"' and option[2] == '"'):
+                option.pop(1)
+                option.pop(1)
+                option.insert(1, '" "')
         performAction(option, user, csock)
         time.sleep(.25)
         
@@ -41,22 +46,85 @@ def listening(conn):
     while True:
         try:
             data = conn.recv(1024).decode().split()
-            # print("here1")
         except:
             d = conn.recv(2048)
             data = pickle.loads(d)
-            print("here2")
-            print(data)
         if data[0] == "rep":
-            user_timeline.append(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
-            print(str(data[1]) + ": " + str(data[2]) + " " +str(data[3]))
+
+            # print("from server data: " + str(data))
+            # print("check first: " + str(data[1][0]))
+            # print("data[1][len(data[1])-1]: " + str(data[1][len(data[1])-1]))
+            if (data[2] == '"' and data[3] == '"'):
+                data.pop(2)
+                data.pop(2)
+                data.insert(2, '" "')
+
+                # print("freq: " + str(data[len(data) - 1]))
+                freq = int(data[len(data) - 1])
+                count = 0
+                # print("final data: " + str(data))
+                while count < freq:
+             
+                    print(str(data[1]) + " " + str(data[2]) + " " + str(data[3]))
+                    count += 1
+                user_timeline.append(str(data[1]) + " " + str(data[2]) + " " + str(data[3]))
+                
+            elif (data[2][0] == '"' and data[2][len(data[2])-1] != '"'):
+                # print("hey")
+                index = 2
+                stop = True
+                newString = ""
+                while index < len(data) and stop:
+                    # print("hey2")
+                    # print("data[index][len(data[index])-1]: " + str(data[index][len(data[index])-1]))
+                    newString += data[index]
+                    # print("newString: " + str(newString))
+                    if (data[index][len(data[index])-1] == '"'):
+                        stop = False  
+                    if stop: 
+                        newString += " " 
+                    index = index + 1    
+                # print("index: " + str(index))
+            
+                count = 0
+                # print("pre pop data: " + str(data))
+                while count < index - 2:
+                    # print("hey3")
+                    data.pop(2)
+                    # print("popped data: " + str(data))
+                    count = count + 1
+                data.insert(1, str(newString))
+                # print("post insert data: " + str(data))
+                freq = int(data[len(data) - 1])
+                count = 0
+                # print("final data: " + str(data))
+                while count < freq: 
+                    print(str(data[2]) + " " + str(data[1]) + " " + str(data[3]))
+                    count += 1
+                user_timeline.append(str(data[2]) + " " + str(data[1]) + " " + str(data[3]))
+            else:
+                # print("freq: " + str(data[len(data) - 1]))
+                freq = int(data[len(data) - 1])
+                count = 0
+                # print("final data: " + str(data))
+                while count < freq: 
+                    print(str(data[1]) + " " + str(data[2]) + " " + str(data[3]))
+                    count += 1
+                user_timeline.append(str(data[1]) + " " + str(data[2]) + " " + str(data[3]))
+
         if data[0] == "good":
             print("operation success")
+
+
         if data[0] == "tooMany":
             print("sub <hashtag> failed, already exists or exceeds 3 limitation")
+
+
         if data[0] == "user":
             for user in data[1:]:
                 print(user)
+
+
         if data[0] == "tweets":
             ###part of Justin's gettweets
             # for tweet in tweets[1:]:
@@ -65,6 +133,7 @@ def listening(conn):
             for tweet in data[1:]:
                 thisTweet += tweet + " " 
             print(thisTweet)
+
 
         if data[0] == "ended":
             print("bye bye")
@@ -77,9 +146,13 @@ def listening(conn):
         # if data[0] == "user":
         #     for user in data[1:]:
         #         print(user)
+
+
         if data[0] == "incoming":
             for person in data[1:]:
                 print(person)
+
+
         if data[0] == "notIn":
             print("no user <Username> in the system")
             
@@ -89,25 +162,58 @@ def listening(conn):
 def performAction(option, user, csock): 
     if (len(option) == 2 and option[0] == "subscribe" and validateTag(option[1])):
         subscribe(user, option[1], csock)
+
+
     if (len(option) >= 3 and option[0] == "tweet"): 
+        # print("tweet: " + str(option))
         tag = str(option.pop())
-        message = option[1]
+        message = option[1:]
+        # print("message: " + str(message))
+        newMessage = ""
         valid = True
-        if (len(message) >= 150):
-            valid = False
-            print("message length illegal, connection refused.")
-        if valid: 
-            tweet(message, tag, user, csock) 
-    elif "tweet" == option[0]:
-        print("message format illegal.")
+        if (len(message) > 1):
+            for word in message:
+                newMessage += str(word) + " "
+            # print("newMessage: " + str(newMessage))
+            if len(newMessage) == 2:
+                valid = False
+                print("message format illegal.")
+            if (len(newMessage) > 152):
+                valid = False
+                print("message length illegal, connection refused.")
+            
+            if valid:
+                # user_timeline.append(str(user) + ": " + str(newMessage) +str(tag))
+                tweet(newMessage, tag, user, csock)
+        else: 
+            if len(message[0]) == 2:
+                valid = False
+                print("message format illegal.")
+            if (len(message[0]) > 152):
+                valid = False
+                print("message length illegal, connection refused.")
+            
+            if valid: 
+                # user_timeline.append(str(user) + ": " + str(message[0]) + " " +str(tag))
+                tweet(message[0], tag, user, csock) 
+
+
     if len(option) == 2 and option[0] == "unsubscribe":
         unsubscribe(user, option[1], csock)
+
+
     if (len(option) == 1 and option[0] == "timeline"):
         timeline()
+
+
     if len(option) == 1 and option[0] == "getusers": 
         getUsers(user, csock)
+
+
     if len(option) == 2 and option[0] == "gettweets":
         getTweets(user, option[1], csock)
+
+
     if len(option) == 1 and option[0] == "exit":
         exit(user, csock)
 
@@ -119,12 +225,9 @@ def tweet(message, tag, user, conn):
     conn.sendall(code.encode())
 
 def subscribe(user, tag, conn): 
-    if len(subs) > 3: #parameter checking
-        print("sub <hashtag> failed, already exists or exceeds 3 limitation") #error code
-    else:
-        subs.append(tag)
-        code = "sub " + str(user) + " " + str(tag) #send to server
-        conn.sendall(code.encode())
+    subs.append(tag)
+    code = "sub " + str(user) + " " + str(tag) #send to server
+    conn.sendall(code.encode())
 
 def unsubscribe(user, tag, conn):
     if tag not in subs: 
@@ -199,6 +302,10 @@ def validateArgs(args):
 # Helper for hashtag validation 
 def validateTag(tag):
     valid = True
+    for char in tag: 
+        if char not in letterNums:
+            valid = False
+            print('hashtag illegal format, connection refused.')
     for index in range(len(tag)-1):
         if tag[index] == tag[index+1]:
             if tag[index] == "#":
