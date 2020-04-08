@@ -1,13 +1,29 @@
 # TweetCLI
+READ_ME
 Backend for a twitter-like application developed for CS 3251 
+Authors: Evangelista Taylor & Justin Deal 
 
-Known Issues
+Division of Tasks: 
+    - Justin set up connection and ability to handle multiple client threads
+    - Evangelista wrote subscribe and tweet functions 
+    - Jusin wrote unsubscribe and timeline, priliminarily wrote getusers and gettweets
+    - Evangelista fully implemented getusers and gettweets and wrote exit
+    - Evangelista and Justin both did error checking against tests
+
+How to Use This Code:
+    1. start server in terminal with: python3 ttweetser.py <port number>
+    2. start client in terminal with: python3 ttweetcli.py <IP address> <port number> <username>
+
+** No dependent packages or make files need to be installed/run for this to run
+
+
+Known Issues ** before submission
 ------------
+- make sure spacing is right 
+the judge2 file is a finicky bitch 
 
-- subscribe duplication thing
 
-- error messages when the server is not connected -> Justin
-- loop through the options and know that the first one is the command and then go through and find the option who's first character is # and then concatinate (pops and inserts) the message into one index space -> do this after empty string check
+
 
 
 

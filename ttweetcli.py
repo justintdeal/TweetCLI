@@ -30,7 +30,7 @@ def main():
             endSessionLock.release()
             sys.exit()
         endSessionLock.release()
-        option = input("\n").split()
+        option = input().split()
         if (len(option) >= 3 and option[1] == '"' and option[2] == '"'):
                 option.pop(1)
                 option.pop(1)
@@ -256,8 +256,9 @@ def exit(user, conn):
 # Helper for Connecting to server #
 ###################################
 def connect(host, port, user): 
+    sock = socket(AF_INET, SOCK_STREAM)
+    # sock.settimeout(1)
     try:
-        sock = socket(AF_INET, SOCK_STREAM)
         sock.connect((host, port))
     except:
         print("error: server ip invalid, connection refused.")
@@ -289,13 +290,14 @@ def validateArgs(args):
         sys.exit()
     host, port, user = args[1], int(args[2]), args[3]
     if port < 1024 or port > 65535: 
-        print('error: server port invalid, connection refused')
+        print('error: server port invalid, connection refused.')
         sys.exit()
     if not re.search(regexIP, host):
-       print('error: server ip invalid, connection refused') 
+       print('error: server ip invalid, connection refused.') 
        sys.exit()
-    if not re.search(regexUser, user):
-        print('error: username has wrong format, connection refused')
+    if not re.search(regexUser, user) or user == "":
+        print('error: username has wrong format, connection refused.')
+        sys.exit()
         
     return host, port, user
 
