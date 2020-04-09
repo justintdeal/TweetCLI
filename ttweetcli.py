@@ -51,7 +51,6 @@ def listening(conn):
         #     data = pickle.loads(d)
         if data[0] == "rep":
 
-            # print("from server data: " + str(data))
             # print("check first: " + str(data[1][0]))
             # print("data[1][len(data[1])-1]: " + str(data[1][len(data[1])-1]))
             if (data[2] == '"' and data[3] == '"'):

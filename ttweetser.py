@@ -180,12 +180,9 @@ def unsubFromTag(user, tag):
 
 ### helper to handle subscriptions to a given hashtag
 def subscribeToTag(user, tag):
-    hashUsers[tag] = []
     if (len(tag) > 1):
         if (len(userSubs[user]) < 3): #add tag to user key
             added = False
-            hashUsers[tag].append(user)
-            print("hashUser: " + str(hashUsers[tag]))
             for subs in userSubs[user]:
                 if tag in subs.keys():
                     # subs[tag] += 1
