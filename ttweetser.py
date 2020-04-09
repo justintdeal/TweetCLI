@@ -8,7 +8,7 @@ activeUsers = [] #list of all active users
 userToPort = dict() #dict of key: users, value: their port number 
 userSubs = dict() #dict of key: user, value: their hashtag subscriptions
 userTweets = dict() #dict of key: user, value: their tweets
-hashUsers = dict()
+
 
 ######################################
 #          Driver Method             #
@@ -118,10 +118,10 @@ def preformAction(data, conn, user):
                 for tag in tags: #going three all hashtags in tweet
                     if ("#" + tag) in sub.keys(): #check if tag is in set of subscriptions
                         userToPort[use].sendall(("rep " + str(user)+" "+ str(message)+ " " + str(data[2]) + " " + str(sub["#" + tag])).encode())
-                        time.sleep(.1)
+                        # time.sleep(.1)
                 if "#ALL" in sub.keys():
                     userToPort[use].sendall(("rep " + str(user)+" "+ str(message)+ " " + str(data[2]) + " " + str(1)).encode())
-                    time.sleep(.1)
+                    # time.sleep(.1)
    
     ### Handles unsubscribing from a hashtag
     if (data[0] == "unsub"):
@@ -142,13 +142,14 @@ def preformAction(data, conn, user):
         user = data[1]
         requestedUser = data[2]
         if requestedUser not in activeUsers:
-            userToPort[user].sendall(("notIn").encode()) 
+            # userToPort[user].sendall(("notIn").encode()) 
+            index = 0
         else:
             toSend = ""
             for twit in userTweets[requestedUser]:
                 toSend += str(requestedUser + ": " + twit)
                 userToPort[user].sendall(("tweets " + toSend).encode()) 
-                time.sleep(.1)   
+                # time.sleep(.25)   
                 toSend = ""
     if data[0] == "exit":
         user = data[1]

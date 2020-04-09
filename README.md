@@ -12,10 +12,9 @@ Division of Tasks:
 
 How to Use This Code:
     1. start server in terminal with: python3 ttweetser.py <port number>
-    2. start client in terminal with: python3 ttweetcli.py <IP address> <port number> <username>
+    2. start client(s) in terminal with: python3 ttweetcli.py <IP address> <port number> <username>
 
 ** No dependent packages or make files need to be installed/run for this to run
-
 
 Known Issues ** before submission
 ------------

@@ -36,7 +36,7 @@ def main():
                 option.pop(1)
                 option.insert(1, '" "')
         performAction(option, user, csock)
-        time.sleep(.25)
+        time.sleep(.1)
         
 ###########################################
 # Client Thread handling server responses #
@@ -44,11 +44,11 @@ def main():
 def listening(conn):
     global endSession
     while True:
-        try:
-            data = conn.recv(1024).decode().split()
-        except:
-            d = conn.recv(2048)
-            data = pickle.loads(d)
+        # try:
+        data = conn.recv(1024).decode().split()
+        # except:
+        #     d = conn.recv(2048)
+        #     data = pickle.loads(d)
         if data[0] == "rep":
 
             # print("from server data: " + str(data))
@@ -153,8 +153,8 @@ def listening(conn):
                 print(person)
 
 
-        if data[0] == "notIn":
-            print("no user <Username> in the system")
+        # if data[0] == "notIn":
+        #     print("no user <Username> in the system")
             
 #########################
 # Handles User Requests #
